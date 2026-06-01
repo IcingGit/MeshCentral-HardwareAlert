@@ -6,6 +6,7 @@ module.exports.hardwarealert = function (parent) {
     obj.fs = require('fs');
     obj.path = require('path');
     obj.https = require('https');
+    obj.VIEWS = __dirname + '/views/';
 
     var pg = null;
     var pgPool = null;
@@ -287,6 +288,201 @@ module.exports.hardwarealert = function (parent) {
             '</div></div>';
 
         QA('pluginHardwareAlert', tabContent);
+    };
+
+    obj.handleAdminReq = function (req, res, user) {
+        if (req.query.user == 1) {
+            obj.getSettings(function (settings) {
+                var vars = {
+                    dingtalkToken: settings.dingtalk_token || '',
+                    alertCooldown: settings.alert_cooldown || '30',
+                    pluginVersion: '1.2.0'
+                };
+                res.render(obj.VIEWS + 'hardwarealert', vars);
+            });
+        }
+    };
+
+    obj.serveraction = function (command, myparent, grandparent) {
+        if (command.plugin != 'hardwarealert') return;
+
+        var sessionid = null;
+        try { sessionid = myparent.ws.sessionId; } catch (e) {}
+
+        switch (command.pluginaction) {
+            case 'getAlerts':
+                obj.handleGetAlerts(command, myparent, sessionid);
+                break;
+            case 'getSettings':
+                obj.handleGetSettings(command, myparent, sessionid);
+                break;
+            case 'saveSettings':
+                obj.handleSaveSettings(command, myparent, sessionid);
+                break;
+            case 'acknowledgeAlert':
+                obj.handleAcknowledgeAlert(command, myparent, sessionid);
+                break;
+            case 'getStats':
+                obj.handleGetStats(command, myparent, sessionid);
+                break;
+            default:
+                break;
+        }
+    };
+
+    function sendToSession(sessionid, response) {
+        if (sessionid && obj.meshServer.webserver.wssessions2 && obj.meshServer.webserver.wssessions2[sessionid]) {
+            try {
+                obj.meshServer.webserver.wssessions2[sessionid].send(JSON.stringify(response));
+            } catch (e) {
+                console.log('Hardware Alert: Error sending to session:', e);
+            }
+        }
+    }
+
+    obj.handleGetAlerts = function (command, myparent, sessionid) {
+        var limit = parseInt(command.limit) || 50;
+        var offset = parseInt(command.offset) || 0;
+        var category = command.category || '';
+        var acknowledged = command.acknowledged;
+
+        var whereClauses = [];
+        var params = [];
+        var paramIdx = 1;
+
+        if (category) {
+            whereClauses.push('change_category = $' + paramIdx);
+            params.push(category);
+            paramIdx++;
+        }
+        if (acknowledged !== undefined && acknowledged !== '') {
+            whereClauses.push('acknowledged = $' + paramIdx);
+            params.push(acknowledged === 'true' || acknowledged === true);
+            paramIdx++;
+        }
+
+        var whereStr = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
+
+        var countSql = 'SELECT COUNT(*) as total FROM hardware_history' + whereStr;
+        var dataSql = 'SELECT id, node_id, node_name, snapshot_time, change_type, change_category, change_detail, acknowledged FROM hardware_history' + whereStr + ' ORDER BY snapshot_time DESC LIMIT $' + paramIdx + ' OFFSET $' + (paramIdx + 1);
+        params.push(limit, offset);
+
+        obj.dbQuery(countSql, params.slice(0, -2), function (err, countResult) {
+            var total = 0;
+            if (!err && countResult && countResult.rows && countResult.rows.length > 0) {
+                total = parseInt(countResult.rows[0].total) || 0;
+            }
+            obj.dbQuery(dataSql, params, function (err2, result) {
+                var alerts = [];
+                if (!err2 && result && result.rows) {
+                    alerts = result.rows;
+                }
+                sendToSession(sessionid, {
+                    action: 'plugin',
+                    plugin: 'hardwarealert',
+                    method: 'loadAlertsData',
+                    success: !err2,
+                    error: err2 ? err2.message : null,
+                    data: { alerts: alerts, total: total, limit: limit, offset: offset }
+                });
+            });
+        });
+    };
+
+    obj.handleGetSettings = function (command, myparent, sessionid) {
+        obj.getSettings(function (settings) {
+            sendToSession(sessionid, {
+                action: 'plugin',
+                plugin: 'hardwarealert',
+                method: 'loadSettingsData',
+                success: true,
+                data: settings
+            });
+        });
+    };
+
+    obj.handleSaveSettings = function (command, myparent, sessionid) {
+        var saved = 0;
+        var total = 0;
+        var keys = Object.keys(command.settings || {});
+        if (keys.length === 0) {
+            sendToSession(sessionid, {
+                action: 'plugin',
+                plugin: 'hardwarealert',
+                method: 'saveSettingsResult',
+                success: true
+            });
+            return;
+        }
+        total = keys.length;
+        for (var i = 0; i < keys.length; i++) {
+            (function (key) {
+                obj.setSetting(key, command.settings[key], function (ok) {
+                    saved++;
+                    if (saved === total) {
+                        sendToSession(sessionid, {
+                            action: 'plugin',
+                            plugin: 'hardwarealert',
+                            method: 'saveSettingsResult',
+                            success: true
+                        });
+                    }
+                });
+            })(keys[i]);
+        }
+    };
+
+    obj.handleAcknowledgeAlert = function (command, myparent, sessionid) {
+        var alertId = command.alertId;
+        if (!alertId) {
+            sendToSession(sessionid, {
+                action: 'plugin',
+                plugin: 'hardwarealert',
+                method: 'acknowledgeResult',
+                success: false,
+                error: 'No alert ID provided'
+            });
+            return;
+        }
+        obj.dbQuery('UPDATE hardware_history SET acknowledged = TRUE WHERE id = $1', [alertId], function (err) {
+            sendToSession(sessionid, {
+                action: 'plugin',
+                plugin: 'hardwarealert',
+                method: 'acknowledgeResult',
+                success: !err,
+                error: err ? err.message : null,
+                alertId: alertId
+            });
+        });
+    };
+
+    obj.handleGetStats = function (command, myparent, sessionid) {
+        var stats = {};
+        var pending = 3;
+        function done() {
+            pending--;
+            if (pending === 0) {
+                sendToSession(sessionid, {
+                    action: 'plugin',
+                    plugin: 'hardwarealert',
+                    method: 'loadStatsData',
+                    success: true,
+                    data: stats
+                });
+            }
+        }
+        obj.dbQuery('SELECT COUNT(*) as total FROM hardware_history', [], function (err, result) {
+            stats.totalAlerts = (!err && result && result.rows) ? parseInt(result.rows[0].total) || 0 : 0;
+            done();
+        });
+        obj.dbQuery('SELECT COUNT(*) as total FROM hardware_history WHERE acknowledged = FALSE', [], function (err, result) {
+            stats.unacknowledged = (!err && result && result.rows) ? parseInt(result.rows[0].total) || 0 : 0;
+            done();
+        });
+        obj.dbQuery('SELECT COUNT(DISTINCT node_id) as total FROM hardware_history', [], function (err, result) {
+            stats.affectedDevices = (!err && result && result.rows) ? parseInt(result.rows[0].total) || 0 : 0;
+            done();
+        });
     };
 
     return obj;

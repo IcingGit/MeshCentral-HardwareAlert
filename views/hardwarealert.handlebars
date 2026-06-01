@@ -1,0 +1,718 @@
+<html>
+<head></head>
+<style>
+#hwAlertContent {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    padding: 0;
+    margin: 0;
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+#hwAlertContent .hw-header {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#hwAlertContent .hw-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#hwAlertContent .hw-header .hw-version {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-left: 8px;
+}
+
+#hwAlertContent .hw-stats {
+    display: flex;
+    gap: 16px;
+    padding: 16px 24px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#hwAlertContent .hw-stat-card {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    text-align: center;
+}
+
+#hwAlertContent .hw-stat-card .hw-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+#hwAlertContent .hw-stat-card .hw-stat-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#hwAlertContent .hw-stat-card.danger .hw-stat-value {
+    color: #dc2626;
+}
+
+#hwAlertContent .hw-toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    align-items: center;
+}
+
+#hwAlertContent .hw-toolbar select,
+#hwAlertContent .hw-toolbar input {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+    outline: none;
+}
+
+#hwAlertContent .hw-toolbar select:focus,
+#hwAlertContent .hw-toolbar input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+#hwAlertContent .hw-toolbar input {
+    flex: 1;
+    max-width: 240px;
+}
+
+#hwAlertContent .hw-toolbar button {
+    padding: 6px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+}
+
+#hwAlertContent .hw-toolbar button:hover {
+    background: #f1f5f9;
+}
+
+#hwAlertContent .hw-toolbar button.primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #2563eb;
+}
+
+#hwAlertContent .hw-toolbar button.primary:hover {
+    background: #2563eb;
+}
+
+#hwAlertContent .hw-tabs {
+    display: flex;
+    padding: 0 24px;
+    background: white;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+#hwAlertContent .hw-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+}
+
+#hwAlertContent .hw-tab:hover {
+    color: #1e293b;
+}
+
+#hwAlertContent .hw-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+#hwAlertContent .hw-panel {
+    display: none;
+    padding: 16px 24px;
+}
+
+#hwAlertContent .hw-panel.active {
+    display: block;
+}
+
+#hwAlertContent .hw-alert-list {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+#hwAlertContent .hw-alert-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: background 0.1s;
+}
+
+#hwAlertContent .hw-alert-item:hover {
+    background: #f8fafc;
+}
+
+#hwAlertContent .hw-alert-item:last-child {
+    border-bottom: none;
+}
+
+#hwAlertContent .hw-alert-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+#hwAlertContent .hw-alert-icon.added {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+#hwAlertContent .hw-alert-icon.removed {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+#hwAlertContent .hw-alert-icon.modified {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+#hwAlertContent .hw-alert-body {
+    flex: 1;
+    min-width: 0;
+}
+
+#hwAlertContent .hw-alert-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #0f172a;
+}
+
+#hwAlertContent .hw-alert-meta {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+#hwAlertContent .hw-alert-detail {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+    background: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border-left: 3px solid #cbd5e1;
+}
+
+#hwAlertContent .hw-alert-actions {
+    flex-shrink: 0;
+}
+
+#hwAlertContent .hw-alert-actions button {
+    padding: 4px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 11px;
+    color: #475569;
+}
+
+#hwAlertContent .hw-alert-actions button:hover {
+    background: #f1f5f9;
+}
+
+#hwAlertContent .hw-alert-item.acknowledged {
+    opacity: 0.6;
+}
+
+#hwAlertContent .hw-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px;
+}
+
+#hwAlertContent .hw-pagination button {
+    padding: 4px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#hwAlertContent .hw-pagination button.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #2563eb;
+}
+
+#hwAlertContent .hw-pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#hwAlertContent .hw-settings-group {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+#hwAlertContent .hw-settings-group h3 {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#hwAlertContent .hw-form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+#hwAlertContent .hw-form-row label {
+    width: 140px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+    flex-shrink: 0;
+}
+
+#hwAlertContent .hw-form-row input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+}
+
+#hwAlertContent .hw-form-row input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+#hwAlertContent .hw-form-row .hw-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+#hwAlertContent .hw-save-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 16px;
+}
+
+#hwAlertContent .hw-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: #94a3b8;
+}
+
+#hwAlertContent .hw-empty .hw-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+#hwAlertContent .hw-toast {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 1000;
+    display: none;
+    animation: slideIn 0.2s ease;
+}
+
+#hwAlertContent .hw-toast.success {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+#hwAlertContent .hw-toast.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+</style>
+<body onload="doOnLoad()">
+<div id="hwAlertContent">
+    <div class="hw-header">
+        <div>
+            <h2>⚠️ 硬件变更告警中心<span class="hw-version">v{{{pluginVersion}}}</span></h2>
+        </div>
+    </div>
+
+    <div class="hw-stats">
+        <div class="hw-stat-card">
+            <div class="hw-stat-value" id="hwStatTotal">-</div>
+            <div class="hw-stat-label">总告警数</div>
+        </div>
+        <div class="hw-stat-card danger">
+            <div class="hw-stat-value" id="hwStatUnack">-</div>
+            <div class="hw-stat-label">未确认</div>
+        </div>
+        <div class="hw-stat-card">
+            <div class="hw-stat-value" id="hwStatDevices">-</div>
+            <div class="hw-stat-label">涉及设备</div>
+        </div>
+    </div>
+
+    <div class="hw-tabs">
+        <div class="hw-tab active" onclick="hwApp.switchTab('alerts')">告警列表</div>
+        <div class="hw-tab" onclick="hwApp.switchTab('settings')">告警设置</div>
+    </div>
+
+    <div class="hw-panel active" id="hwPanelAlerts">
+        <div class="hw-toolbar">
+            <select id="hwFilterCategory" onchange="hwApp.loadAlerts()">
+                <option value="">所有类别</option>
+                <option value="motherboard">主板</option>
+                <option value="cpu">CPU</option>
+                <option value="memory">内存</option>
+                <option value="disks">磁盘</option>
+                <option value="nics">网卡</option>
+                <option value="bios">BIOS</option>
+                <option value="gpu">显卡</option>
+            </select>
+            <select id="hwFilterAck" onchange="hwApp.loadAlerts()">
+                <option value="">所有状态</option>
+                <option value="false">未确认</option>
+                <option value="true">已确认</option>
+            </select>
+            <button class="primary" onclick="hwApp.loadAlerts()">🔄 刷新</button>
+        </div>
+        <div id="hwAlertList" class="hw-alert-list">
+            <div class="hw-empty">
+                <div class="hw-empty-icon">📋</div>
+                <div>加载中...</div>
+            </div>
+        </div>
+        <div id="hwPagination" class="hw-pagination"></div>
+    </div>
+
+    <div class="hw-panel" id="hwPanelSettings">
+        <div class="hw-settings-group">
+            <h3>🔔 钉钉 Webhook 告警</h3>
+            <div class="hw-form-row">
+                <label>Access Token</label>
+                <div style="flex:1">
+                    <input type="text" id="hwSettingDingtalkToken" placeholder="钉钉机器人 Webhook 的 access_token" value="{{{dingtalkToken}}}" />
+                    <div class="hw-hint">在钉钉群 → 设置 → 智能群助手 → 添加机器人 → 自定义，获取 Webhook URL 中的 access_token</div>
+                </div>
+            </div>
+        </div>
+        <div class="hw-settings-group">
+            <h3>⏱️ 告警冷却</h3>
+            <div class="hw-form-row">
+                <label>冷却时间（分钟）</label>
+                <div style="flex:1">
+                    <input type="number" id="hwSettingCooldown" min="1" max="1440" value="{{{alertCooldown}}}" />
+                    <div class="hw-hint">同一设备同一类别的告警在此时间内不会重复发送（默认 30 分钟）</div>
+                </div>
+            </div>
+        </div>
+        <div class="hw-save-bar">
+            <button onclick="hwApp.loadSettings()">重置</button>
+            <button class="primary" onclick="hwApp.saveSettings()">💾 保存设置</button>
+        </div>
+    </div>
+
+    <div class="hw-toast" id="hwToast"></div>
+</div>
+</body>
+<script>
+var hwApp = (function() {
+    var currentPage = 0;
+    var pageSize = 20;
+    var totalAlerts = 0;
+
+    var categoryLabels = {
+        'motherboard': '主板',
+        'cpu': 'CPU',
+        'memory': '内存',
+        'disks': '磁盘',
+        'nics': '网卡',
+        'bios': 'BIOS',
+        'gpu': '显卡'
+    };
+
+    var typeLabels = {
+        'added': '新增',
+        'removed': '移除',
+        'modified': '变更'
+    };
+
+    var typeIcons = {
+        'added': '➕',
+        'removed': '❌',
+        'modified': '⚠️'
+    };
+
+    function init() {
+        loadStats();
+        loadAlerts();
+    }
+
+    function switchTab(tab) {
+        var tabs = document.querySelectorAll('.hw-tab');
+        var panels = document.querySelectorAll('.hw-panel');
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].classList.remove('active');
+        }
+        for (var j = 0; j < panels.length; j++) {
+            panels[j].classList.remove('active');
+        }
+        if (tab === 'alerts') {
+            tabs[0].classList.add('active');
+            document.getElementById('hwPanelAlerts').classList.add('active');
+        } else {
+            tabs[1].classList.add('active');
+            document.getElementById('hwPanelSettings').classList.add('active');
+            loadSettings();
+        }
+    }
+
+    function loadStats() {
+        parent.meshserver.send({
+            action: 'plugin',
+            plugin: 'hardwarealert',
+            pluginaction: 'getStats'
+        });
+    }
+
+    function loadAlerts() {
+        var category = document.getElementById('hwFilterCategory').value;
+        var acknowledged = document.getElementById('hwFilterAck').value;
+        parent.meshserver.send({
+            action: 'plugin',
+            plugin: 'hardwarealert',
+            pluginaction: 'getAlerts',
+            limit: pageSize,
+            offset: currentPage * pageSize,
+            category: category,
+            acknowledged: acknowledged
+        });
+    }
+
+    function loadSettings() {
+        parent.meshserver.send({
+            action: 'plugin',
+            plugin: 'hardwarealert',
+            pluginaction: 'getSettings'
+        });
+    }
+
+    function saveSettings() {
+        var token = document.getElementById('hwSettingDingtalkToken').value.trim();
+        var cooldown = document.getElementById('hwSettingCooldown').value.trim();
+        parent.meshserver.send({
+            action: 'plugin',
+            plugin: 'hardwarealert',
+            pluginaction: 'saveSettings',
+            settings: {
+                dingtalk_token: token,
+                alert_cooldown: cooldown
+            }
+        });
+    }
+
+    function acknowledgeAlert(alertId) {
+        parent.meshserver.send({
+            action: 'plugin',
+            plugin: 'hardwarealert',
+            pluginaction: 'acknowledgeAlert',
+            alertId: alertId
+        });
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        loadAlerts();
+    }
+
+    function handleMessage(message) {
+        if (message.method === 'loadAlertsData') {
+            renderAlerts(message.data);
+        } else if (message.method === 'loadStatsData') {
+            renderStats(message.data);
+        } else if (message.method === 'loadSettingsData') {
+            renderSettings(message.data);
+        } else if (message.method === 'saveSettingsResult') {
+            if (message.success) {
+                showToast('设置已保存', 'success');
+            } else {
+                showToast('保存失败', 'error');
+            }
+        } else if (message.method === 'acknowledgeResult') {
+            if (message.success) {
+                showToast('已确认', 'success');
+                loadAlerts();
+                loadStats();
+            } else {
+                showToast('确认失败: ' + (message.error || ''), 'error');
+            }
+        }
+    }
+
+    function renderStats(data) {
+        document.getElementById('hwStatTotal').textContent = data.totalAlerts || 0;
+        document.getElementById('hwStatUnack').textContent = data.unacknowledged || 0;
+        document.getElementById('hwStatDevices').textContent = data.affectedDevices || 0;
+    }
+
+    function renderAlerts(data) {
+        var container = document.getElementById('hwAlertList');
+        var alerts = data.alerts || [];
+        totalAlerts = data.total || 0;
+
+        if (alerts.length === 0) {
+            container.innerHTML = '<div class="hw-empty"><div class="hw-empty-icon">✅</div><div>暂无硬件变更告警记录</div></div>';
+            document.getElementById('hwPagination').innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < alerts.length; i++) {
+            var a = alerts[i];
+            var catLabel = categoryLabels[a.change_category] || a.change_category;
+            var typeLabel = typeLabels[a.change_type] || a.change_type;
+            var typeIcon = typeIcons[a.change_type] || '⚠️';
+            var ackClass = a.acknowledged ? ' acknowledged' : '';
+            var time = a.snapshot_time ? new Date(a.snapshot_time).toLocaleString('zh-CN') : '-';
+
+            var detailHtml = '';
+            try {
+                var detail = typeof a.change_detail === 'string' ? JSON.parse(a.change_detail) : a.change_detail;
+                if (Array.isArray(detail) && detail.length > 0) {
+                    detailHtml = '<div class="hw-alert-detail">';
+                    for (var d = 0; d < detail.length; d++) {
+                        if (detail[d].field) {
+                            detailHtml += escapeHtml(String(detail[d].from)) + ' → ' + escapeHtml(String(detail[d].to)) + ' (' + escapeHtml(detail[d].field) + ')';
+                        } else if (detail[d].action) {
+                            detailHtml += escapeHtml(typeLabels[detail[d].action] || detail[d].action) + ': ' + escapeHtml(JSON.stringify(detail[d].item));
+                        }
+                        if (d < detail.length - 1) detailHtml += '<br/>';
+                    }
+                    detailHtml += '</div>';
+                }
+            } catch (e) {}
+
+            html += '<div class="hw-alert-item' + ackClass + '">' +
+                '<div class="hw-alert-icon ' + a.change_type + '">' + typeIcon + '</div>' +
+                '<div class="hw-alert-body">' +
+                '<div class="hw-alert-title">' + escapeHtml(a.node_name || a.node_id) + ' — ' + catLabel + typeLabel + '</div>' +
+                '<div class="hw-alert-meta">' + time + (a.acknowledged ? ' · 已确认' : '') + '</div>' +
+                detailHtml +
+                '</div>' +
+                '<div class="hw-alert-actions">' +
+                (a.acknowledged ? '' : '<button onclick="hwApp.acknowledgeAlert(' + a.id + ')">确认</button>') +
+                '</div>' +
+                '</div>';
+        }
+        container.innerHTML = html;
+
+        renderPagination(data.total, data.limit, data.offset);
+    }
+
+    function renderPagination(total, limit, offset) {
+        var container = document.getElementById('hwPagination');
+        var totalPages = Math.ceil(total / limit);
+        var currentPageIdx = Math.floor(offset / limit);
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        var html = '<button ' + (currentPageIdx === 0 ? 'disabled' : 'onclick="hwApp.goToPage(' + (currentPageIdx - 1) + ')"') + '>上一页</button>';
+        var startPage = Math.max(0, currentPageIdx - 2);
+        var endPage = Math.min(totalPages - 1, currentPageIdx + 2);
+        for (var p = startPage; p <= endPage; p++) {
+            html += '<button class="' + (p === currentPageIdx ? 'active' : '') + '" onclick="hwApp.goToPage(' + p + ')">' + (p + 1) + '</button>';
+        }
+        html += '<button ' + (currentPageIdx >= totalPages - 1 ? 'disabled' : 'onclick="hwApp.goToPage(' + (currentPageIdx + 1) + ')"') + '>下一页</button>';
+        container.innerHTML = html;
+    }
+
+    function renderSettings(data) {
+        if (data.dingtalk_token) document.getElementById('hwSettingDingtalkToken').value = data.dingtalk_token;
+        if (data.alert_cooldown) document.getElementById('hwSettingCooldown').value = data.alert_cooldown;
+    }
+
+    function showToast(msg, type) {
+        var toast = document.getElementById('hwToast');
+        toast.textContent = msg;
+        toast.className = 'hw-toast ' + type;
+        toast.style.display = 'block';
+        setTimeout(function() { toast.style.display = 'none'; }, 3000);
+    }
+
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    return {
+        switchTab: switchTab,
+        loadAlerts: loadAlerts,
+        loadSettings: loadSettings,
+        saveSettings: saveSettings,
+        acknowledgeAlert: acknowledgeAlert,
+        goToPage: goToPage,
+        handleMessage: handleMessage
+    };
+})();
+</script>
+</html>
