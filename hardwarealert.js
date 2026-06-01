@@ -23,7 +23,7 @@ module.exports.hardwarealert = function (parent) {
     var lastAlertTimes = {};
     var cachedSettings = null;
 
-    obj.exports = ['onDeviceRefreshEnd', 'onWebUIStartupEnd'];
+    obj.exports = ['onDeviceRefreshEnd'];
 
     obj.server_startup = function () {
         obj.initPgPool();
@@ -117,20 +117,6 @@ module.exports.hardwarealert = function (parent) {
     obj.getSettings = function (callback) {
         if (cachedSettings) { callback(cachedSettings); return; }
         obj.loadAllSettings(callback);
-    };
-
-    obj.saveSettings = function (settings, callback) {
-        var keys = Object.keys(settings);
-        var saved = 0;
-        if (keys.length === 0) { if (callback) callback(true); return; }
-        for (var i = 0; i < keys.length; i++) {
-            (function (key) {
-                obj.setSetting(key, settings[key], function () {
-                    saved++;
-                    if (saved === keys.length) { if (callback) callback(true); }
-                });
-            })(keys[i]);
-        }
     };
 
     obj.getAlertCooldownMs = function (callback) {
@@ -254,16 +240,6 @@ module.exports.hardwarealert = function (parent) {
         });
     };
 
-    obj.onDeviceHardwareChange = function (nodeId, nodeName, hardwareData) {
-        obj.getLastHardwareSnapshot(nodeId, function (previous) {
-            var changes = obj.detectHardwareChanges(previous, hardwareData);
-            if (changes.length > 0) {
-                obj.saveHardwareHistory(nodeId, nodeName, hardwareData, changes);
-                obj.sendDingTalkWebhook(nodeName, changes);
-            }
-        });
-    };
-
     obj.hook_agentCoreIsStable = function (node) {
         if (!node || !node.hardware) return;
         var nodeId = node._id;
@@ -294,46 +270,24 @@ module.exports.hardwarealert = function (parent) {
             tabOrder: 90,
             source: 'plugin:hardwarealert'
         });
-        var tabContent = '<div style="padding:16px;">' +
-            '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;">' +
+
+        var tabContent = '<div style="padding:16px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">' +
+            '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">' +
+            '<h3 style="margin:0;color:#1e293b;">\u26A0\uFE0F \u786C\u4EF6\u53D8\u66F4\u5386\u53F2</h3>' +
+            '<div style="display:flex;gap:8px;align-items:center;">' +
             '<select id="hwCategoryFilter" style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;">' +
             '<option value="">\u6240\u6709\u7C7B\u522B</option>' +
             '<option value="motherboard">\u4E3B\u677F</option><option value="cpu">CPU</option><option value="memory">\u5185\u5B58</option>' +
             '<option value="disks">\u78C1\u76D8</option><option value="nics">\u7F51\u5361</option><option value="bios">BIOS</option><option value="gpu">\u663E\u5361</option>' +
             '</select>' +
             '<input id="hwSearchInput" type="text" placeholder="\u641C\u7D22\u53D8\u66F4..." style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;flex:1;" />' +
-            '</div>' +
-            '<div id="hwHistoryTimeline" style="max-height:400px;overflow-y:auto;"></div>' +
-            '</div>';
+            '</div></div>' +
+            '<div id="hwHistoryTimeline" style="max-height:500px;overflow-y:auto;">' +
+            '<p style="color:#64748b;text-align:center;padding:32px;">\u786C\u4EF6\u53D8\u66F4\u8BB0\u5F55\u5C06\u5728\u8BBE\u5907\u786C\u4EF6\u53D1\u751F\u53D8\u66F4\u540E\u81EA\u52A8\u663E\u793A\u3002</p>' +
+            '</div></div>';
+
         QA('pluginHardwareAlert', tabContent);
     };
-
-    obj.onWebUIStartupEnd = function () {
-        var style = document.createElement('style');
-        style.id = 'hw-alert-styles';
-        style.textContent = HW_CSS;
-        document.head.appendChild(style);
-
-        var script = document.createElement('script');
-        script.id = 'hw-alert-scripts';
-        script.textContent = HW_JS;
-        document.body.appendChild(script);
-
-        if (typeof hwInit === 'function') {
-            hwInit();
-        } else {
-            var tries = 0;
-            var interval = setInterval(function () {
-                tries++;
-                if (typeof hwInit === 'function') { hwInit(); clearInterval(interval); }
-                else if (tries > 20) { clearInterval(interval); }
-            }, 200);
-        }
-    };
-
-    var HW_CSS = ':root{--hw-brand:#D00B23;--hw-brand-light:#fef2f2;--hw-brand-dark:#991425;--hw-bg:#f8fafc;--hw-card-bg:#fff;--hw-border:#e2e8f0;--hw-text:#1e293b;--hw-text-secondary:#64748b;--hw-success:#16a34a;--hw-warning:#d97706;--hw-info:#2563eb}#hardwareHistoryTab{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:var(--hw-text)}.hw-card{background:var(--hw-card-bg);border:1px solid var(--hw-border);border-radius:8px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .2s}.hw-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}.hw-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.hw-card-title{font-weight:600;font-size:14px;color:var(--hw-text)}.hw-card-time{font-size:12px;color:var(--hw-text-secondary)}.hw-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase}.hw-badge-added{background:#dcfce7;color:#166534}.hw-badge-removed{background:#fef2f2;color:#991b1b}.hw-badge-modified{background:#fef9c3;color:#854d0e}.hw-timeline{position:relative;padding-left:24px}.hw-timeline::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--hw-border)}.hw-timeline-item{position:relative;padding-bottom:16px}.hw-timeline-item::before{content:"";position:absolute;left:-20px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--hw-brand);border:2px solid var(--hw-card-bg)}.hw-timeline-item.hw-timeline-added::before{background:var(--hw-success)}.hw-timeline-item.hw-timeline-removed::before{background:var(--hw-brand)}.hw-timeline-item.hw-timeline-modified::before{background:var(--hw-warning)}.hw-diff-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.hw-diff-table th,.hw-diff-table td{padding:6px 12px;border:1px solid var(--hw-border);text-align:left}.hw-diff-table th{background:var(--hw-bg);font-weight:600}.hw-diff-old{background:#fef2f2;color:#991b1b;text-decoration:line-through}.hw-diff-new{background:#dcfce7;color:#166534}.hw-btn{display:inline-flex;align-items:center;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:background .2s}.hw-btn-primary{background:var(--hw-brand);color:#fff}.hw-btn-primary:hover{background:var(--hw-brand-dark)}.hw-btn-secondary{background:var(--hw-bg);color:var(--hw-text);border:1px solid var(--hw-border)}.hw-btn-secondary:hover{background:#e2e8f0}.hw-alert-center{padding:20px}.hw-alert-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}.hw-stat-card{background:var(--hw-card-bg);border:1px solid var(--hw-border);border-radius:8px;padding:16px;text-align:center}.hw-stat-number{font-size:28px;font-weight:700;color:var(--hw-brand)}.hw-stat-label{font-size:12px;color:var(--hw-text-secondary);margin-top:4px}.hw-empty-state{text-align:center;padding:40px 20px;color:var(--hw-text-secondary)}.hw-empty-state-icon{font-size:48px;margin-bottom:12px}.hw-pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}.hw-pagination button{padding:4px 12px;border:1px solid var(--hw-border);border-radius:4px;background:var(--hw-card-bg);cursor:pointer}.hw-pagination button.active{background:var(--hw-brand);color:#fff;border-color:var(--hw-brand)}.hw-loading{text-align:center;padding:20px;color:var(--hw-text-secondary)}';
-
-    var HW_JS = 'function hwInit(){addAlertCenterMenu()}function addAlertCenterMenu(){var a=document.getElementById("LeftBarMyDevices");if(!a)return;var b=document.getElementById("hwAlertCenterLink");if(b)return;var c=document.createElement("div");c.id="hwAlertCenterLink";c.className="leftBarNav";c.style.cssText="cursor:pointer;padding:8px 16px;display:flex;align-items:center;gap:8px;color:#D00B23;font-weight:500;";c.innerHTML="<span style=\\"font-size:16px\\">\\u26a0\\ufe0f</span> \\u544a\\u8b66\\u4e2d\\u5fc3";c.onclick=function(){showAlertCenter()};a.parentNode.insertBefore(c,a.nextSibling)}function showAlertCenter(){var a=document.getElementById("MainDevPlugins");if(!a)return;a.style.display="";a.innerHTML="<div class=\\"hw-alert-center\\"><div style=\\"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px\\"><h2 style=\\"margin:0;color:#1e293b\\">\\u26a0\\ufe0f \\u786c\\u4ef6\\u53d8\\u66f4\\u544a\\u8b66\\u4e2d\\u5fc3</h2><button class=\\"hw-btn hw-btn-secondary\\" onclick=\\"hwShowSettings()\\">\\u2699\\ufe0f \\u544a\\u8b66\\u8bbe\\u7f6e</button></div><div class=\\"hw-alert-summary\\" id=\\"hwAlertSummary\\"></div><div style=\\"margin-bottom:12px;display:flex;gap:8px;align-items:center\\"><select id=\\"hwAlertCategoryFilter\\" style=\\"padding:4px 8px;border:1px solid #ccc;border-radius:4px\\"><option value=\\"\\">\\u6240\\u6709\\u7c7b\\u522b</option><option value=\\"motherboard\\">\\u4e3b\\u677f</option><option value=\\"cpu\\">CPU</option><option value=\\"memory\\">\\u5185\\u5b58</option><option value=\\"disks\\">\\u78c1\\u76d8</option><option value=\\"nics\\">\\u7f51\\u5361</option><option value=\\"bios\\">BIOS</option><option value=\\"gpu\\">\\u663e\\u5361</option></select><input id=\\"hwAlertSearchInput\\" type=\\"text\\" placeholder=\\"\\u641c\\u7d22\\u8bbe\\u5907...\\" style=\\"padding:4px 8px;border:1px solid #ccc;border-radius:4px;flex:1\\" /><button class=\\"hw-btn hw-btn-secondary\\" onclick=\\"hwLoadAlerts()\\">\\u5237\\u65b0</button></div><div id=\\"hwAlertList\\"></div><div id=\\"hwAlertPagination\\" class=\\"hw-pagination\\"></div></div>";hwLoadAlerts()}function hwShowSettings(){var a=document.getElementById("MainDevPlugins");if(!a)return;a.innerHTML="<div class=\\"hw-alert-center\\"><div style=\\"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px\\"><h2 style=\\"margin:0;color:#1e293b\\">\\u2699\\ufe0f \\u544a\\u8b66\\u8bbe\\u7f6e</h2><button class=\\"hw-btn hw-btn-secondary\\" onclick=\\"showAlertCenter()\\">\\u2190 \\u8fd4\\u56de\\u544a\\u8b66\\u4e2d\\u5fc3</button></div><div class=\\"hw-card\\"><h3 style=\\"margin:0 0 12px 0;font-size:15px\\">\\u9489\\u9489 Webhook \\u914d\\u7f6e</h3><div style=\\"margin-bottom:12px\\"><label style=\\"display:block;margin-bottom:4px;font-size:13px;color:#64748b\\">Access Token</label><input id=\\"hwDingtalkToken\\" type=\\"text\\" placeholder=\\"\\u8bf7\\u8f93\\u5165\\u9489\\u9489\\u673a\\u5668\\u4eba Access Token\\" style=\\"width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px;box-sizing:border-box\\" /><p style=\\"margin:4px 0 0 0;font-size:12px;color:#94a3b8\\">\\u5728\\u9489\\u9489\\u7fa4\\u673a\\u5668\\u4eba\\u8bbe\\u7f6e\\u4e2d\\u83b7\\u53d6</p></div><div style=\\"margin-bottom:12px\\"><label style=\\"display:block;margin-bottom:4px;font-size:13px;color:#64748b\\">Webhook URL \\u9884\\u89c8</label><code id=\\"hwWebhookPreview\\" style=\\"display:block;padding:8px 12px;background:#f1f5f9;border-radius:6px;font-size:12px;word-break:break-all;color:#64748b\\">https://oapi.dingtalk.com/robot/send?access_token=&lt;your_token&gt;</code></div><div style=\\"margin-bottom:12px\\"><label style=\\"display:block;margin-bottom:4px;font-size:13px;color:#64748b\\">\\u544a\\u8b66\\u51b7\\u5374\\u65f6\\u95f4\\uff08\\u5206\\u949f\\uff09</label><input id=\\"hwAlertCooldown\\" type=\\"number\\" value=\\"30\\" min=\\"1\\" max=\\"1440\\" style=\\"width:120px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;font-size:13px\\" /><p style=\\"margin:4px 0 0 0;font-size:12px;color:#94a3b8\\">\\u540c\\u8bbe\\u5907\\u540c\\u7c7b\\u578b\\u53d8\\u66f4\\u5728\\u51b7\\u5374\\u65f6\\u95f4\\u5185\\u4e0d\\u91cd\\u590d\\u53d1\\u9001\\u544a\\u8b66</p></div><div style=\\"text-align:right\\"><button class=\\"hw-btn hw-btn-primary\\" onclick=\\"hwSaveSettings()\\">\\u4fdd\\u5b58\\u8bbe\\u7f6e</button></div></div><div id=\\"hwSettingsMessage\\" style=\\"margin-top:8px\\"></div></div>";var b=document.getElementById("hwDingtalkToken");b.addEventListener("input",function(){document.getElementById("hwWebhookPreview").textContent="https://oapi.dingtalk.com/robot/send?access_token="+(b.value||"<your_token>")})}function hwSaveSettings(){var a=document.getElementById("hwDingtalkToken").value.trim();var b=document.getElementById("hwAlertCooldown").value||"30";var c=document.getElementById("hwSettingsMessage");c.innerHTML="<div class=\\"hw-card\\" style=\\"background:#dcfce7;border-color:#16a34a;color:#166534\\">\\u2705 \\u8bbe\\u7f6e\\u5df2\\u4fdd\\u5b58\\uff08\\u524d\\u7aef\\u6f14\\u793a\\uff0c\\u5b9e\\u9645\\u5b58\\u50a8\\u9700\\u540e\\u7aef API \\u5bf9\\u63a5\\uff09</div>";setTimeout(function(){c.innerHTML=""},3e3)}function hwLoadAlerts(){var a=document.getElementById("hwAlertList");if(!a)return;a.innerHTML="<div class=\\"hw-empty-state\\"><div class=\\"hw-empty-state-icon\\">\\u2705</div><p>\\u6682\\u65e0\\u786c\\u4ef6\\u53d8\\u66f4\\u544a\\u8b66</p><p style=\\"font-size:12px;color:#94a3b8\\">\\u5f53\\u8bbe\\u5907\\u786c\\u4ef6\\u53d1\\u751f\\u53d8\\u66f4\\u65f6\\uff0c\\u544a\\u8b66\\u5c06\\u663e\\u793a\\u5728\\u6b64\\u5904</p></div>";var b=document.getElementById("hwAlertSummary");if(b)b.innerHTML="<div class=\\"hw-stat-card\\"><div class=\\"hw-stat-number\\">0</div><div class=\\"hw-stat-label\\">\\u603b\\u544a\\u8b66\\u6570</div></div><div class=\\"hw-stat-card\\"><div class=\\"hw-stat-number\\" style=\\"color:#D00B23\\">0</div><div class=\\"hw-stat-label\\">\\u672a\\u786e\\u8ba4</div></div><div class=\\"hw-stat-card\\"><div class=\\"hw-stat-number\\" style=\\"color:#2563eb\\">0</div><div class=\\"hw-stat-label\\">\\u4eca\\u65e5\\u65b0\\u589e</div></div>"}function getCategoryLabel(a){var b={motherboard:"\\u4e3b\\u677f",cpu:"CPU",memory:"\\u5185\\u5b58",disks:"\\u78c1\\u76d8",nics:"\\u7f51\\u5361",bios:"BIOS",gpu:"\\u663e\\u5361"};return b[a]||a}function formatTime(a){if(!a)return"";return new Date(a).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai"})}';
 
     return obj;
 };
